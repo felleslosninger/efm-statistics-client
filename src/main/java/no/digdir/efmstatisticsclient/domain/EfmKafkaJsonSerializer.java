@@ -42,11 +42,6 @@ public class EfmKafkaJsonSerializer<T> implements Serializer<T> {
         }
     }
 
-/*    @Override
-    public byte[] serialize(String topic, Headers headers, T data) {
-        return new byte[0];
-    }*/
-
     @Override
     public void close() {
 

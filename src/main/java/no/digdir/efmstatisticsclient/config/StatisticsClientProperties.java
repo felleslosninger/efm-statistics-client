@@ -25,6 +25,12 @@ public class StatisticsClientProperties {
     private Integer cacheMaxBytesBuffer;
     @NotNull
     private Long windowSizeSeconds;
+    @NotNull
+    private String topic;
+    @NotNull
+    private String state;
+    @NotNull
+    private String count;
 
 }
 

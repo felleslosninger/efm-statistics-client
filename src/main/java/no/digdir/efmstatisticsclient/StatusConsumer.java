@@ -27,6 +27,9 @@ public class StatusConsumer {
     private final StatisticsClientProperties statisticsClientProperties;
     private final Serde<StatusMessage> statusMessageSerde;
     private final Serde<StatusKey> statusKeySerde;
+    private final long RETENTION = 365;
+    private final Long ONETHOUSAND = 1000L;
+    private final Long TEN = 10L;
 
     @PostConstruct
     public void statusCount() {
@@ -34,21 +37,21 @@ public class StatusConsumer {
         long windowSeconds = statisticsClientProperties.getWindowSizeSeconds();
         StreamsBuilder builder = new StreamsBuilder();
 
-        KStream<StatusKey, Long> statusStream = builder.stream("test-status", Consumed.with(Serdes.String(), statusMessageSerde))
+        KStream<StatusKey, Long> statusStream = builder.stream(statisticsClientProperties.getTopic(), Consumed.with(Serdes.String(), statusMessageSerde))
                 .groupBy((k, v) -> {
                     long start = v.getTimestamp().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-                    start = start - (start % (windowSeconds * 1000L));
-                    long end = start + windowSeconds * 1000L;
+                    start = start - (start % (windowSeconds * ONETHOUSAND));
+                    long end = start + windowSeconds * ONETHOUSAND;
                     return new StatusKey(v.getOrgnr(), v.getStatus(), v.getService_identifier(), start, end);
                 })
-                .count(Materialized.<StatusKey, Long, KeyValueStore<Bytes, byte[]>>as("status-state-store")
+                .count(Materialized.<StatusKey, Long, KeyValueStore<Bytes, byte[]>>as(statisticsClientProperties.getState())
                         .withKeySerde(statusKeySerde)
-                        .withRetention(Duration.ofDays(365)))
-                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(10L), Suppressed.BufferConfig.unbounded()))
+                        .withRetention(Duration.ofDays(RETENTION)))
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(TEN), Suppressed.BufferConfig.unbounded()))
                 .toStream();
 
         statusStream.print(Printed.toSysOut());
-        statusStream.to("status-count", with(statusKeySerde, Serdes.Long()));
+        statusStream.to(statisticsClientProperties.getCount(), with(statusKeySerde, Serdes.Long()));
 
         KafkaStreams streams = new KafkaStreams(builder.build(), consumerProperties);
         streams.start();

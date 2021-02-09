@@ -52,11 +52,6 @@ public class EfmKafkaJsonDeserializer<T> implements Deserializer<T> {
         }
     }
 
- /*   @Override
-    public T deserialize(String topic, Headers headers, byte[] data) {
-        return null;
-    }*/
-
     @Override
     public void close() {
 
