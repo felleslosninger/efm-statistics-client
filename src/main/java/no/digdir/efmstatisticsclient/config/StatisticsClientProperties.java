@@ -31,7 +31,10 @@ public class StatisticsClientProperties {
     private String countStore;
     @NotNull
     private String countTopic;
-
+    @NotNull
+    private Long retentionPeriod;
+    @NotNull
+    private Long suppressionPeriod;
 }
 
 

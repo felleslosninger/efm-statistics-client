@@ -27,9 +27,7 @@ public class StatusConsumer {
     private final StatisticsClientProperties statisticsClientProperties;
     private final Serde<StatusMessage> statusMessageSerde;
     private final Serde<StatusKey> statusKeySerde;
-    private final long RETENTION = 365;
     private final Long ONETHOUSAND = 1000L;
-    private final Long TEN = 10L;
 
     @PostConstruct
     public void statusCount() {
@@ -46,8 +44,8 @@ public class StatusConsumer {
                 })
                 .count(Materialized.<StatusKey, Long, KeyValueStore<Bytes, byte[]>>as(statisticsClientProperties.getCountStore())
                         .withKeySerde(statusKeySerde)
-                        .withRetention(Duration.ofDays(RETENTION)))
-                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(TEN), Suppressed.BufferConfig.unbounded()))
+                        .withRetention(Duration.ofDays(statisticsClientProperties.getRetentionPeriod())))
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(statisticsClientProperties.getSuppressionPeriod()), Suppressed.BufferConfig.unbounded()))
                 .toStream();
 
         statusStream.print(Printed.toSysOut());
