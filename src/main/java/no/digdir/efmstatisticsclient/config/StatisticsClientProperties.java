@@ -26,11 +26,11 @@ public class StatisticsClientProperties {
     @NotNull
     private Long windowSizeSeconds;
     @NotNull
-    private String topic;
+    private String statusTopic;
     @NotNull
-    private String state;
+    private String countStore;
     @NotNull
-    private String count;
+    private String countTopic;
 
 }
 

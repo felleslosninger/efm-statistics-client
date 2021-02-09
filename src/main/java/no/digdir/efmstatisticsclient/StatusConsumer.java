@@ -37,21 +37,21 @@ public class StatusConsumer {
         long windowSeconds = statisticsClientProperties.getWindowSizeSeconds();
         StreamsBuilder builder = new StreamsBuilder();
 
-        KStream<StatusKey, Long> statusStream = builder.stream(statisticsClientProperties.getTopic(), Consumed.with(Serdes.String(), statusMessageSerde))
+        KStream<StatusKey, Long> statusStream = builder.stream(statisticsClientProperties.getStatusTopic(), Consumed.with(Serdes.String(), statusMessageSerde))
                 .groupBy((k, v) -> {
                     long start = v.getTimestamp().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
                     start = start - (start % (windowSeconds * ONETHOUSAND));
                     long end = start + windowSeconds * ONETHOUSAND;
                     return new StatusKey(v.getOrgnr(), v.getStatus(), v.getService_identifier(), start, end);
                 })
-                .count(Materialized.<StatusKey, Long, KeyValueStore<Bytes, byte[]>>as(statisticsClientProperties.getState())
+                .count(Materialized.<StatusKey, Long, KeyValueStore<Bytes, byte[]>>as(statisticsClientProperties.getCountStore())
                         .withKeySerde(statusKeySerde)
                         .withRetention(Duration.ofDays(RETENTION)))
                 .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(TEN), Suppressed.BufferConfig.unbounded()))
                 .toStream();
 
         statusStream.print(Printed.toSysOut());
-        statusStream.to(statisticsClientProperties.getCount(), with(statusKeySerde, Serdes.Long()));
+        statusStream.to(statisticsClientProperties.getCountTopic(), with(statusKeySerde, Serdes.Long()));
 
         KafkaStreams streams = new KafkaStreams(builder.build(), consumerProperties);
         streams.start();
