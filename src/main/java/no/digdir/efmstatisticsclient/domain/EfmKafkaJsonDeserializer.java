@@ -1,5 +1,7 @@
 package no.digdir.efmstatisticsclient.domain;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -26,6 +28,7 @@ public class EfmKafkaJsonDeserializer<T> implements Deserializer<T> {
         objectMapper.registerModule(new JavaTimeModule());
         Boolean failUnknownProperties = config.getBoolean("json.fail.unknown.properties");
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, failUnknownProperties);
+        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
     }
 
     public void configure(KafkaJsonDeserializerConfig config, boolean isKey) {

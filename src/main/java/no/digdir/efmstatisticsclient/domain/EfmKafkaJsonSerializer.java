@@ -1,5 +1,7 @@
 package no.digdir.efmstatisticsclient.domain;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -24,6 +26,7 @@ public class EfmKafkaJsonSerializer<T> implements Serializer<T> {
         Boolean prettyPrint = config.getBoolean("json.indent.output");
         objectMapper.registerModules(new JavaTimeModule());
         objectMapper.configure(SerializationFeature.INDENT_OUTPUT, prettyPrint);
+        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
     }
 
     @Override

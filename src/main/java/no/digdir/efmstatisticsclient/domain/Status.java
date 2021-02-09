@@ -1,6 +1,6 @@
 package no.digdir.efmstatisticsclient.domain;
 
-enum Status {
+public enum Status {
     OPPRETTET,
     SENDT,
     MOTTATT,
