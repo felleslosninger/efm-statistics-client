@@ -19,7 +19,7 @@ public class CountConsumer {
     private final Properties consumerProperties;
     private final Serde<StatusKey> statusKeySerde;
 
-    @PostConstruct
+//    @PostConstruct
     public void statusCount() {
 
         StreamsBuilder builder = new StreamsBuilder();

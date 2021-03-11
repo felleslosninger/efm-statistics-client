@@ -35,6 +35,15 @@ public class StatisticsClientProperties {
     private Long retentionPeriod;
     @NotNull
     private Long suppressionPeriod;
+    
+    @NotNull
+    private String ingestHost;
+    @NotNull
+    private String ingestSeriesName;
+    @NotNull
+    private String ingestUsername;
+    @NotNull
+    private String ingestPassword;    
 }
 
 
