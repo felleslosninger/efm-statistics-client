@@ -21,11 +21,29 @@
 		<repository>
 			<name>confluent</name>
 			<id>confluent</id>
-			<releases>true</releases>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
 			<url>https://packages.confluent.io/maven/</url>
+		</repository>
+		<repository>
+			<id>DIFI Move releases</id>
+			<name>DIFI MOVE releases on Nexus</name>
+			<url>https://beta-meldingsutveksling.difi.no/content/repositories/releases/</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
 		</repository>
 	</repositories>
 	<dependencies>
+		<dependency>
+			<groupId>no.difi.statistics</groupId>
+			<artifactId>statistics-client-ingest</artifactId>
+			<version>2018-03-20-1139-3cdff63</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
