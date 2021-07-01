@@ -17,7 +17,7 @@ public class ElasticsearchIngestController {
 
     @GetMapping("/")
     public String getESIndex(@RequestParam(name = "index") String index) {
-        elasticsearchIngestService.openIndex(index);
+        elasticsearchIngestService.getLogsFromIndex(index);
         return index;
 
     }

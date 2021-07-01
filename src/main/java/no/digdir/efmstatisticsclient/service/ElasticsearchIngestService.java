@@ -15,32 +15,29 @@ import java.util.List;
 public class ElasticsearchIngestService {
     private final ElasticsearchClientImpl client;
     List<HitDTO> hits = new ArrayList<>();
-    private String scrollId = "";
 
-    public void openIndex(String index) {
+    public void getLogsFromIndex(String index) {
         EsIndexDTO esIndexDTO = client.openScrollIndex(index);
 
         if (esIndexDTO.getScrollId() != null) {
-            scrollId = esIndexDTO.getScrollId();
+            String scrollId = esIndexDTO.getScrollId();
             log.trace("ScrollId is: " + scrollId);
-        }
-        hits = esIndexDTO.getHits().getHitDtoList();
 
-        System.out.println("Scroll is created and Hits contains: ");
-        for (HitDTO h : hits) {
-            System.out.println(h + "\n");
-        }
+            hits = esIndexDTO.getHits().getHitDtoList();
+            getNextScrollFromIndex(scrollId, esIndexDTO);
+            log.info("Retrieved {} out of {} available log events", hits.size(), esIndexDTO.getHits().getTotal());
 
-        getNextScrollFromIndex(scrollId, esIndexDTO);
-        System.out.println("testing hits size when its ready to use: " + hits.size());
-        //TODO clear scroll cleanup client.clearScroll(scrollId);
+            if(client.clearScroll(scrollId).isSucceeded()) {
+                log.trace("Successfully cleared scroll. Ready for another index");
+            }
+        }
     }
 
-    public void getNextScrollFromIndex(String scrollId, EsIndexDTO dto) {
+    private void getNextScrollFromIndex(String scrollId, EsIndexDTO dto) {
         while (dto.getHits().getTotal() > hits.size()) {
             if (scrollId.length() > 1) {
                 EsIndexDTO nextScroll = client.getNextScroll(scrollId);
-                //nextScroll.getHits().getHitDtoList().stream().map(h -> hits.add(h));
+//TODO putt i liste med streams api?
                 for (HitDTO h : nextScroll.getHits().getHitDtoList()) {
                     hits.add(h);
                     log.trace("adding to hits list: {}", h);
@@ -48,7 +45,7 @@ public class ElasticsearchIngestService {
             } else {
                 break;
             }
-            System.out.println("While ended and hits has " + hits.size() + " elements.");
+            System.out.println("While ran a loop and hits has " + hits.size() + " elements.");
         }
     }
 }

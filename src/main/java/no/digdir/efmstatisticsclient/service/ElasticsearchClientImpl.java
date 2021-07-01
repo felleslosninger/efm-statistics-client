@@ -9,6 +9,7 @@ import io.netty.handler.timeout.WriteTimeoutHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import no.digdir.efmstatisticsclient.config.StatisticsClientProperties;
+import no.digdir.efmstatisticsclient.domain.data.ClearScrollDTO;
 import no.digdir.efmstatisticsclient.domain.data.EsIndexDTO;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -52,13 +53,28 @@ public class ElasticsearchClientImpl implements ElasticsearchClient {
                 .build();
     }
 
-    //TODO sjekk om scrollen er open ?
-    //TODO lukk scrollen etter at ein er ferdig.
+    private ExchangeStrategies getExchangeStrategies() {
+        ObjectMapper objectMapper = getObjectMapper();
+        return ExchangeStrategies.builder()
+                .codecs(config -> {
+                    config.defaultCodecs().jackson2JsonEncoder(new Jackson2JsonEncoder(objectMapper));
+                    config.defaultCodecs().jackson2JsonDecoder(new Jackson2JsonDecoder(objectMapper));
+                    config.defaultCodecs().maxInMemorySize(32 * 1024 * 1024);
+                }).build();
+    }
+
+    private ObjectMapper getObjectMapper() {
+        ObjectMapper objectMapper = Jackson2ObjectMapperBuilder.json().build();
+        objectMapper.configure(SerializationFeature.FLUSH_AFTER_WRITE_VALUE, false);
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        return objectMapper;
+    }
+
     public EsIndexDTO openScrollIndex(String index) {
         URI uri = getScrollDownloadURI(index);
         log.trace("Fetching event data from Elasticsearch on URL: {}", uri);
         String initiateScroll = "{\n" +
-                "  \"size\": 1000,\n" +
+                "  \"size\": 10000,\n" +
                 "  \"query\": {\n" +
                 "      \"match\": {\n" +
                 "          \"logger_name\": \"STATUS\"\n" +
@@ -77,6 +93,29 @@ public class ElasticsearchClientImpl implements ElasticsearchClient {
 
     }
 
+    public EsIndexDTO getNextScroll(String scrollId) {
+        log.trace("Attempting to fetch next scroll with id: {}", scrollId);
+
+        return webClient.get()
+                .uri(getNextScrollURI(scrollId))
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .acceptCharset(StandardCharsets.UTF_8)
+                .retrieve()
+                .bodyToMono(EsIndexDTO.class)
+                .block(Duration.of(properties.getElasticsearch().readTimeoutInMs, ChronoUnit.MILLIS));
+    }
+
+    public ClearScrollDTO clearScroll(String scrollId) {
+        log.debug("Clearing scroll with id: {}", scrollId);
+        return webClient.delete()
+                .uri(getDeleteScrollURI(scrollId))
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .acceptCharset(StandardCharsets.UTF_8)
+                .retrieve()
+                .bodyToMono(ClearScrollDTO.class)
+                .block(Duration.of(properties.getElasticsearch().readTimeoutInMs, ChronoUnit.MILLIS));
+    }
+
     @SneakyThrows(URISyntaxException.class)
     public URI getScrollDownloadURI(String index) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUri(properties.getElasticsearch().getEndpointURL().toURI())
@@ -87,23 +126,6 @@ public class ElasticsearchClientImpl implements ElasticsearchClient {
         URI uri = builder.build().toUri();
         log.trace("Built Elasticsearch Scroll API URL: {}", uri);
         return uri;
-    }
-
-    private ExchangeStrategies getExchangeStrategies() {
-        ObjectMapper objectMapper = getObjectMapper();
-        return ExchangeStrategies.builder()
-                .codecs(config -> {
-                    config.defaultCodecs().jackson2JsonEncoder(new Jackson2JsonEncoder(objectMapper));
-                    config.defaultCodecs().jackson2JsonDecoder(new Jackson2JsonDecoder(objectMapper));
-                    config.defaultCodecs().maxInMemorySize(16 * 1024 * 1024);
-                }).build();
-    }
-
-    private ObjectMapper getObjectMapper() {
-        ObjectMapper objectMapper = Jackson2ObjectMapperBuilder.json().build();
-        objectMapper.configure(SerializationFeature.FLUSH_AFTER_WRITE_VALUE, false);
-        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        return objectMapper;
     }
 
     @SneakyThrows(URISyntaxException.class)
@@ -119,16 +141,16 @@ public class ElasticsearchClientImpl implements ElasticsearchClient {
         return uri;
     }
 
-    public EsIndexDTO getNextScroll(String scrollId) {
-        log.trace("Attempting to fetch next scroll with id: {}", scrollId);
+    @SneakyThrows(URISyntaxException.class)
+    private URI getDeleteScrollURI(String scrollId) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUri(properties.getElasticsearch().getEndpointURL().toURI())
+                .path("_search/scroll")
+                .queryParam("scroll_id", scrollId)
+                .queryParam("pretty");
 
-        return webClient.get()
-                .uri(getNextScrollURI(scrollId))
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .acceptCharset(StandardCharsets.UTF_8)
-                .retrieve()
-                .bodyToMono(EsIndexDTO.class)
-                .block(Duration.of(properties.getElasticsearch().readTimeoutInMs, ChronoUnit.MILLIS));
+        URI uri = builder.build().toUri();
+        log.trace("Built Elasticsearch clear scroll URL: {}", uri);
+        return uri;
     }
 }
 
