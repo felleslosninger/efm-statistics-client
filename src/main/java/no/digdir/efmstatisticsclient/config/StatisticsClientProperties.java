@@ -5,13 +5,18 @@ import lombok.NoArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import java.net.URL;
 
 @NoArgsConstructor
 @Configuration
 @ConfigurationProperties(prefix = "digdir.statisticsclient")
 @Data
 public class StatisticsClientProperties {
+
+    @Valid
+    private ElasticsearchProperties elasticsearch;
 
     @NotNull
     private String applicationId;
@@ -43,7 +48,21 @@ public class StatisticsClientProperties {
     @NotNull
     private String ingestUsername;
     @NotNull
-    private String ingestPassword;    
+    private String ingestPassword;
+
+    //Elasticsearch ingest
+    @Data
+    public static class ElasticsearchProperties {
+        @NotNull
+        private URL endpointURL;
+        @NotNull
+        public long readTimeoutInMs;
+        @NotNull
+        public Integer connectTimeoutInMs;
+        @NotNull
+        public long writeTimeoutInMs;
+
+    }
 }
 
 
