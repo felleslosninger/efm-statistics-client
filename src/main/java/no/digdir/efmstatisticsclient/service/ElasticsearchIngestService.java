@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import no.digdir.efmstatisticsclient.domain.data.EsIndexDTO;
 import no.digdir.efmstatisticsclient.domain.data.HitDTO;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +18,7 @@ public class ElasticsearchIngestService {
     private final ElasticsearchClientImpl client;
     List<HitDTO> hits = new ArrayList<>();
 
-    public void getLogsFromIndex(String index) {
+    public Flux<HitDTO> getLogsFromIndex(String index) {
         EsIndexDTO esIndexDTO = client.openScrollIndex(index);
 
         if (esIndexDTO.getScrollId() != null) {
@@ -31,6 +33,10 @@ public class ElasticsearchIngestService {
                 log.trace("Successfully cleared scroll. Ready for another index");
             }
         }
+        return Mono.just(hits)
+                .flatMapMany(Flux::fromIterable)
+                .log();
+
     }
 
     private void getNextScrollFromIndex(String scrollId, EsIndexDTO dto) {
