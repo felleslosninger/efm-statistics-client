@@ -20,16 +20,20 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.tcp.TcpClient;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
+
+import static org.springframework.web.reactive.function.BodyInserters.fromObject;
 
 @Slf4j
 @Component
@@ -82,14 +86,20 @@ public class ElasticsearchClientImpl implements ElasticsearchClient {
                 "  }\n" +
                 "}";
 
-        return webClient.post()
+        Mono<EsIndexDTO> esIndexDTOFlux = webClient.post()
                 .uri(uri)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .acceptCharset(StandardCharsets.UTF_8)
                 .bodyValue(initiateScroll)
                 .retrieve()
-                .bodyToMono(EsIndexDTO.class)
-                .block(Duration.of(properties.getElasticsearch().readTimeoutInMs, ChronoUnit.MILLIS));
+                .bodyToMono(EsIndexDTO.class);
+
+        //esIndexDTOFlux.subscribe(System.out::println);
+        esIndexDTOFlux.flatMap();
+        return ;
+        //TODO returnere objektet i monoen som er ein EsIndexDTO
+
+        //.block(Duration.of(properties.getElasticsearch().readTimeoutInMs, ChronoUnit.MILLIS));
 
     }
 
@@ -102,7 +112,8 @@ public class ElasticsearchClientImpl implements ElasticsearchClient {
                 .acceptCharset(StandardCharsets.UTF_8)
                 .retrieve()
                 .bodyToMono(EsIndexDTO.class)
-                .block(Duration.of(properties.getElasticsearch().readTimeoutInMs, ChronoUnit.MILLIS));
+                .block();
+                //.block(Duration.of(properties.getElasticsearch().readTimeoutInMs, ChronoUnit.MILLIS));
     }
 
     public ClearScrollDTO clearScroll(String scrollId) {
@@ -113,7 +124,8 @@ public class ElasticsearchClientImpl implements ElasticsearchClient {
                 .acceptCharset(StandardCharsets.UTF_8)
                 .retrieve()
                 .bodyToMono(ClearScrollDTO.class)
-                .block(Duration.of(properties.getElasticsearch().readTimeoutInMs, ChronoUnit.MILLIS));
+                .block();
+                //.block(Duration.of(properties.getElasticsearch().readTimeoutInMs, ChronoUnit.MILLIS));
     }
 
     @SneakyThrows(URISyntaxException.class)

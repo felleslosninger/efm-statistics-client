@@ -17,7 +17,6 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.state.KeyValueStore;
-import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -116,7 +115,7 @@ public class StatusConsumer {
         con.setRequestMethod("POST");
 
         String auth = statisticsClientProperties.getIngestUsername() + ":" + statisticsClientProperties.getIngestPassword();
-        byte[] encodedAuth = Base64.encodeBase64(auth.getBytes(StandardCharsets.UTF_8));
+        byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.UTF_8));
         String authHeaderValue = "Basic " + new String(encodedAuth);
         con.setRequestProperty("Authorization", authHeaderValue);
 
